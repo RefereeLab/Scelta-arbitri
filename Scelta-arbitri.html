@@ -74,265 +74,269 @@
     </div>
 
     <script type="module">
-        // Firebase and Firestore imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        // La funzione per inizializzare l'app viene chiamata solo quando il DOM è completamente caricato.
+        window.addEventListener('DOMContentLoaded', async () => {
 
-        // Global variables for Firebase configuration, provided by the environment
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+            // Firebase and Firestore imports
+            import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+            import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+            import { getFirestore, collection, addDoc, onSnapshot, query, where, getDocs, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
+            // Global variables for Firebase configuration, provided by the environment
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        const referees = [
-            "Mario Rossi", "Luca Bianchi", "Giovanni Russo", "Marco Esposito",
-            "Antonio Romano", "Francesco Gallo", "Giuseppe Conti",
-            "Federico Moretti", "Alessandro Ferri", "Matteo Riccardi"
-        ];
+            // Initialize Firebase
+            const app = initializeApp(firebaseConfig);
+            const db = getFirestore(app);
+            const auth = getAuth(app);
 
-        let selectedReferees = [];
-        let selectedCaptain = null;
-        let userId = null;
+            const referees = [
+                "Mario Rossi", "Luca Bianchi", "Giovanni Russo", "Marco Esposito",
+                "Antonio Romano", "Francesco Gallo", "Giuseppe Conti",
+                "Federico Moretti", "Alessandro Ferri", "Matteo Riccardi"
+            ];
 
-        // DOM elements
-        const nicknameInput = document.getElementById('nickname');
-        const refereesListEl = document.getElementById('refereesList');
-        const captainSelectionArea = document.getElementById('captainSelectionArea');
-        const captainListEl = document.getElementById('captainList');
-        const submitBtn = document.getElementById('submitBtn');
-        const messageBox = document.getElementById('messageBox');
-        const loadingIndicator = document.getElementById('loadingIndicator');
-        const successArea = document.getElementById('successArea');
-        const selectionArea = document.getElementById('selectionArea');
-        const resultsListEl = document.getElementById('resultsList');
-        const noResultsMessage = document.getElementById('noResults');
-        const todayDateEl = document.getElementById('todayDate');
+            let selectedReferees = [];
+            let selectedCaptain = null;
+            let userId = null;
 
-        // Set today's date
-        const today = new Date();
-        const formattedDate = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }).format(today);
-        todayDateEl.textContent = formattedDate;
+            // DOM elements
+            const nicknameInput = document.getElementById('nickname');
+            const refereesListEl = document.getElementById('refereesList');
+            const captainSelectionArea = document.getElementById('captainSelectionArea');
+            const captainListEl = document.getElementById('captainList');
+            const submitBtn = document.getElementById('submitBtn');
+            const messageBox = document.getElementById('messageBox');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const successArea = document.getElementById('successArea');
+            const selectionArea = document.getElementById('selectionArea');
+            const resultsListEl = document.getElementById('resultsList');
+            const noResultsMessage = document.getElementById('noResults');
+            const todayDateEl = document.getElementById('todayDate');
 
-        // Function to show a message box
-        function showMessage(text, type = 'error') {
-            messageBox.textContent = text;
-            messageBox.style.opacity = '1';
-            if (type === 'success') {
-                messageBox.classList.remove('bg-red-100', 'text-red-700');
-                messageBox.classList.add('bg-green-100', 'text-green-700');
-            } else {
-                messageBox.classList.remove('bg-green-100', 'text-red-700');
-                messageBox.classList.add('bg-red-100', 'text-red-700');
+            // Set today's date
+            const today = new Date();
+            const formattedDate = new Intl.DateTimeFormat('it-IT', { day: '2-digit', month: 'long', year: 'numeric' }).format(today);
+            todayDateEl.textContent = formattedDate;
+
+            // Function to show a message box
+            function showMessage(text, type = 'error') {
+                messageBox.textContent = text;
+                messageBox.style.opacity = '1';
+                if (type === 'success') {
+                    messageBox.classList.remove('bg-red-100', 'text-red-700');
+                    messageBox.classList.add('bg-green-100', 'text-green-700');
+                } else {
+                    messageBox.classList.remove('bg-green-100', 'text-red-700');
+                    messageBox.classList.add('bg-red-100', 'text-red-700');
+                }
+                // Hide the message after 3 seconds
+                setTimeout(() => {
+                    messageBox.style.opacity = '0';
+                }, 3000);
             }
-            // Hide the message after 3 seconds
-            setTimeout(() => {
-                messageBox.style.opacity = '0';
-            }, 3000);
-        }
 
-        // Function to update the captain selection list
-        function updateCaptainSelectionList() {
-            captainListEl.innerHTML = '';
-            selectedCaptain = null;
-            selectedReferees.forEach(name => {
+            // Function to update the captain selection list
+            function updateCaptainSelectionList() {
+                captainListEl.innerHTML = '';
+                selectedCaptain = null;
+                selectedReferees.forEach(name => {
+                    const li = document.createElement('li');
+                    li.className = "flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200";
+                    li.innerHTML = `<span class="text-gray-800">${name}</span>`;
+                    li.dataset.name = name;
+                    li.addEventListener('click', () => {
+                        // Deselect any previously selected captain
+                        captainListEl.querySelectorAll('li').forEach(item => {
+                            item.classList.remove('bg-green-100', 'ring-2', 'ring-green-500');
+                        });
+                        
+                        // Select the new captain
+                        li.classList.add('bg-green-100', 'ring-2', 'ring-green-500');
+                        selectedCaptain = name;
+                        updateSubmitButtonState();
+                    });
+                    captainListEl.appendChild(li);
+                });
+            }
+
+            // Populate the list of referees
+            referees.forEach(name => {
                 const li = document.createElement('li');
                 li.className = "flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200";
-                li.innerHTML = `<span class="text-gray-800">${name}</span>`;
+                li.innerHTML = `
+                    <span class="text-gray-800">${name}</span>
+                    <span class="text-gray-400 text-xs check-icon">Scegli</span>
+                `;
                 li.dataset.name = name;
                 li.addEventListener('click', () => {
-                    // Deselect any previously selected captain
-                    captainListEl.querySelectorAll('li').forEach(item => {
-                        item.classList.remove('bg-green-100', 'ring-2', 'ring-green-500');
-                    });
+                    if (li.classList.contains('bg-blue-100')) {
+                        // Deselect
+                        li.classList.remove('bg-blue-100');
+                        li.querySelector('.check-icon').textContent = 'Scegli';
+                        selectedReferees = selectedReferees.filter(ref => ref !== name);
+                    } else {
+                        // Select
+                        if (selectedReferees.length < 3) {
+                            li.classList.add('bg-blue-100');
+                            li.querySelector('.check-icon').textContent = 'Selezionato';
+                            selectedReferees.push(name);
+                        } else {
+                            showMessage('Puoi scegliere un massimo di 3 arbitri.');
+                        }
+                    }
                     
-                    // Select the new captain
-                    li.classList.add('bg-green-100', 'ring-2', 'ring-green-500');
-                    selectedCaptain = name;
+                    // Show/hide captain selection area
+                    if (selectedReferees.length === 3) {
+                        captainSelectionArea.classList.remove('hidden');
+                        updateCaptainSelectionList();
+                    } else {
+                        captainSelectionArea.classList.add('hidden');
+                        selectedCaptain = null;
+                    }
                     updateSubmitButtonState();
                 });
-                captainListEl.appendChild(li);
+                refereesListEl.appendChild(li);
             });
-        }
 
-        // Populate the list of referees
-        referees.forEach(name => {
-            const li = document.createElement('li');
-            li.className = "flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors duration-200";
-            li.innerHTML = `
-                <span class="text-gray-800">${name}</span>
-                <span class="text-gray-400 text-xs check-icon">Scegli</span>
-            `;
-            li.dataset.name = name;
-            li.addEventListener('click', () => {
-                if (li.classList.contains('bg-blue-100')) {
-                    // Deselect
-                    li.classList.remove('bg-blue-100');
-                    li.querySelector('.check-icon').textContent = 'Scegli';
-                    selectedReferees = selectedReferees.filter(ref => ref !== name);
+            // Function to enable/disable the submit button
+            function updateSubmitButtonState() {
+                const isFormValid = selectedReferees.length === 3 && selectedCaptain !== null && nicknameInput.value.trim() !== '';
+                submitBtn.disabled = !isFormValid;
+                if (submitBtn.disabled) {
+                    submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                    submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
                 } else {
-                    // Select
-                    if (selectedReferees.length < 3) {
-                        li.classList.add('bg-blue-100');
-                        li.querySelector('.check-icon').textContent = 'Selezionato';
-                        selectedReferees.push(name);
-                    } else {
-                        showMessage('Puoi scegliere un massimo di 3 arbitri.');
-                    }
+                    submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                    submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 }
-                
-                // Show/hide captain selection area
-                if (selectedReferees.length === 3) {
-                    captainSelectionArea.classList.remove('hidden');
-                    updateCaptainSelectionList();
-                } else {
-                    captainSelectionArea.classList.add('hidden');
-                    selectedCaptain = null;
-                }
-                updateSubmitButtonState();
-            });
-            refereesListEl.appendChild(li);
-        });
-
-        // Function to enable/disable the submit button
-        function updateSubmitButtonState() {
-            const isFormValid = selectedReferees.length === 3 && selectedCaptain !== null && nicknameInput.value.trim() !== '';
-            submitBtn.disabled = !isFormValid;
-            if (submitBtn.disabled) {
-                submitBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
-                submitBtn.classList.add('bg-gray-400', 'cursor-not-allowed');
-            } else {
-                submitBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
-                submitBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
-            }
-        }
-
-        // Submit button click handler
-        submitBtn.addEventListener('click', async () => {
-            const nickname = nicknameInput.value.trim();
-            if (selectedReferees.length !== 3 || selectedCaptain === null || nickname === '') {
-                showMessage('Devi scegliere esattamente 3 arbitri, un capitano e inserire il tuo nome/nickname.');
-                return;
             }
 
-            loadingIndicator.classList.remove('hidden');
-            submitBtn.disabled = true;
-
-            try {
-                // Check if the user has already submitted for today
-                const userSelectionsRef = collection(db, `artifacts/${appId}/public/data/referee-selections`);
-                const userQuery = query(userSelectionsRef, where("userId", "==", userId));
-                const userDocs = await getDocs(userQuery);
-                const todayFormatted = new Date().toISOString().slice(0, 10);
-                let hasSubmittedToday = false;
-                userDocs.forEach(doc => {
-                    const data = doc.data();
-                    if (data.date === todayFormatted) {
-                        hasSubmittedToday = true;
-                    }
-                });
-
-                if (hasSubmittedToday) {
-                    showMessage('Hai già inviato le tue scelte per oggi.');
-                    loadingIndicator.classList.add('hidden');
-                    submitBtn.disabled = false;
+            // Submit button click handler
+            submitBtn.addEventListener('click', async () => {
+                const nickname = nicknameInput.value.trim();
+                if (selectedReferees.length !== 3 || selectedCaptain === null || nickname === '') {
+                    showMessage('Devi scegliere esattamente 3 arbitri, un capitano e inserire il tuo nome/nickname.');
                     return;
                 }
 
-                // Add the new selection to Firestore
-                await addDoc(userSelectionsRef, {
-                    userId: userId,
-                    nickname: nickname,
-                    date: todayFormatted,
-                    selection: selectedReferees,
-                    captain: selectedCaptain,
-                    timestamp: new Date()
+                loadingIndicator.classList.remove('hidden');
+                submitBtn.disabled = true;
+
+                try {
+                    // Check if the user has already submitted for today
+                    const userSelectionsRef = collection(db, `artifacts/${appId}/public/data/referee-selections`);
+                    const userQuery = query(userSelectionsRef, where("userId", "==", userId));
+                    const userDocs = await getDocs(userQuery);
+                    const todayFormatted = new Date().toISOString().slice(0, 10);
+                    let hasSubmittedToday = false;
+                    userDocs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.date === todayFormatted) {
+                            hasSubmittedToday = true;
+                        }
+                    });
+
+                    if (hasSubmittedToday) {
+                        showMessage('Hai già inviato le tue scelte per oggi.');
+                        loadingIndicator.classList.add('hidden');
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
+                    // Add the new selection to Firestore
+                    await addDoc(userSelectionsRef, {
+                        userId: userId,
+                        nickname: nickname,
+                        date: todayFormatted,
+                        selection: selectedReferees,
+                        captain: selectedCaptain,
+                        timestamp: new Date()
+                    });
+
+                    // Show success message and hide selection area
+                    selectionArea.classList.add('hidden');
+                    successArea.classList.remove('hidden');
+
+                } catch (e) {
+                    console.error("Errore durante l'invio delle scelte:", e);
+                    showMessage("Si è verificato un errore. Riprova più tardi.", 'error');
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    submitBtn.disabled = false;
+                }
+            });
+
+            // Real-time results listener
+            const unsubscribe = onSnapshot(collection(db, `artifacts/${appId}/public/data/referee-selections`), (snapshot) => {
+                const allSelections = [];
+                const refereeCounts = {};
+                const captainCounts = {};
+                snapshot.forEach((doc) => {
+                    const data = doc.data();
+                    if (data.selection) {
+                        data.selection.forEach(referee => {
+                            refereeCounts[referee] = (refereeCounts[referee] || 0) + 1;
+                        });
+                    }
+                    if (data.captain) {
+                        captainCounts[data.captain] = (captainCounts[data.captain] || 0) + 1;
+                    }
                 });
 
-                // Show success message and hide selection area
-                selectionArea.classList.add('hidden');
-                successArea.classList.remove('hidden');
+                // Clear previous results
+                resultsListEl.innerHTML = '';
 
-            } catch (e) {
-                console.error("Errore durante l'invio delle scelte:", e);
-                showMessage("Si è verificato un errore. Riprova più tardi.", 'error');
-            } finally {
-                loadingIndicator.classList.add('hidden');
-                submitBtn.disabled = false;
-            }
-        });
-
-        // Real-time results listener
-        const unsubscribe = onSnapshot(collection(db, `artifacts/${appId}/public/data/referee-selections`), (snapshot) => {
-            const allSelections = [];
-            const refereeCounts = {};
-            const captainCounts = {};
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                if (data.selection) {
-                    data.selection.forEach(referee => {
-                        refereeCounts[referee] = (refereeCounts[referee] || 0) + 1;
+                // Get sorted referee names
+                const sortedReferees = referees.sort((a, b) => {
+                    const countA = refereeCounts[a] || 0;
+                    const countB = refereeCounts[b] || 0;
+                    return countB - countA;
+                });
+                
+                // Populate the results list
+                if (Object.keys(refereeCounts).length > 0) {
+                    noResultsMessage.classList.add('hidden');
+                    sortedReferees.forEach(name => {
+                        const count = refereeCounts[name] || 0;
+                        const captainCount = captainCounts[name] || 0;
+                        const resultItem = document.createElement('div');
+                        resultItem.className = "flex items-center justify-between text-gray-700 text-sm py-2 px-3 bg-gray-50 rounded-lg";
+                        resultItem.innerHTML = `
+                            <span class="font-semibold">${name}</span>
+                            <div class="flex items-center space-x-4">
+                                <span>Voti: <span class="font-bold">${count}</span></span>
+                                <span>Capitano: <span class="font-bold">${captainCount}</span></span>
+                            </div>
+                        `;
+                        resultsListEl.appendChild(resultItem);
                     });
-                }
-                if (data.captain) {
-                    captainCounts[data.captain] = (captainCounts[data.captain] || 0) + 1;
+                } else {
+                    noResultsMessage.classList.remove('hidden');
                 }
             });
 
-            // Clear previous results
-            resultsListEl.innerHTML = '';
-
-            // Get sorted referee names
-            const sortedReferees = referees.sort((a, b) => {
-                const countA = refereeCounts[a] || 0;
-                const countB = refereeCounts[b] || 0;
-                return countB - countA;
-            });
-            
-            // Populate the results list
-            if (Object.keys(refereeCounts).length > 0) {
-                noResultsMessage.classList.add('hidden');
-                sortedReferees.forEach(name => {
-                    const count = refereeCounts[name] || 0;
-                    const captainCount = captainCounts[name] || 0;
-                    const resultItem = document.createElement('div');
-                    resultItem.className = "flex items-center justify-between text-gray-700 text-sm py-2 px-3 bg-gray-50 rounded-lg";
-                    resultItem.innerHTML = `
-                        <span class="font-semibold">${name}</span>
-                        <div class="flex items-center space-x-4">
-                            <span>Voti: <span class="font-bold">${count}</span></span>
-                            <span>Capitano: <span class="font-bold">${captainCount}</span></span>
-                        </div>
-                    `;
-                    resultsListEl.appendChild(resultItem);
+            // Initialize authentication
+            if (initialAuthToken) {
+                signInWithCustomToken(auth, initialAuthToken).then(userCredential => {
+                    userId = userCredential.user.uid;
+                    updateSubmitButtonState();
+                }).catch(error => {
+                    console.error("Errore nell'autenticazione con token personalizzato:", error);
+                    signInAnonymously(auth).then(userCredential => {
+                        userId = userCredential.user.uid;
+                        updateSubmitButtonState();
+                    });
                 });
             } else {
-                noResultsMessage.classList.remove('hidden');
-            }
-        });
-
-        // Initialize authentication
-        if (initialAuthToken) {
-            signInWithCustomToken(auth, initialAuthToken).then(userCredential => {
-                userId = userCredential.user.uid;
-                updateSubmitButtonState();
-            }).catch(error => {
-                console.error("Errore nell'autenticazione con token personalizzato:", error);
                 signInAnonymously(auth).then(userCredential => {
                     userId = userCredential.user.uid;
                     updateSubmitButtonState();
                 });
-            });
-        } else {
-            signInAnonymously(auth).then(userCredential => {
-                userId = userCredential.user.uid;
-                updateSubmitButtonState();
-            });
-        }
+            }
+        });
     </script>
 </body>
 </html>
