@@ -515,7 +515,7 @@
             <div class="flex justify-between h-16">
                 <!-- Logo & Brand -->
                 <div class="flex items-center gap-4 cursor-pointer" onclick="window.location.reload()">
-<div class="w-4 h-4 sm:w-9 sm:h-9 rounded bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-slate-900 shadow-glow">
+<div class="hidden sm:flex w-9 h-9 rounded bg-gradient-to-br from-yellow-400 to-yellow-600 items-center justify-center text-slate-900 shadow-glow">
     <i class="fa-solid fa-whistle text-base sm:text-lg rotate-[-15deg]"></i>
 </div>
                     <div class="flex flex-col justify-center">
@@ -549,7 +549,7 @@
                 <!-- Mobile & Actions -->
                 <div class="flex items-center gap-3">
                     <!-- Mobile View Switcher -->
-                    <div class="md:hidden flex bg-slate-800 rounded-lg p-1 border border-slate-700 w-[90vw]">
+                    <div class="md:hidden flex bg-slate-800 rounded-lg p-1 border border-slate-700">
                         <button onclick="switchView('stats')" id="mob-nav-stats" class="p-2 rounded text-yellow-500 bg-slate-700"><i class="fa-solid fa-chart-bar"></i></button>
                         <button onclick="switchView('playingTime')" id="mob-nav-time" class="p-2 rounded text-slate-400"><i class="fa-solid fa-stopwatch"></i></button>
                         <button onclick="switchView('matches')" id="mob-nav-matches" class="p-2 rounded text-slate-400"><i class="fa-solid fa-list"></i></button>
